@@ -239,13 +239,18 @@ void NRF24_setPayloadLength(uint8_t data_pipe, uint8_t length) {
 }
 
 void NRF24_RxMode(void) {
-    uint8_t config_register;
+    uint8_t temp_register;
 
     NRF24_writeCommand(FLUSH_RX);
-    NRF24_readRegister(CONFIG, &config_register, 1);
-    config_register |= (1 << PWR_UP_BIT) | (1 << PRIM_RX_BIT);
-    NRF24_writeRegister(CONFIG, &config_register, 1);
+    NRF24_readRegister(CONFIG, &temp_register, 1);
+    temp_register |= (1 << PWR_UP_BIT) | (1 << PRIM_RX_BIT);
+    NRF24_writeRegister(CONFIG, &temp_register, 1);
     NRF24_setCE(HIGH);
+
+    // reset RX_DR_BIT in status register
+    NRF24_readRegister(STATUS, &temp_register, 1);
+    temp_register |= (1 << RX_DR_BIT);
+    NRF24_writeRegister(STATUS, &temp_register, 1);
 }
 
 void NRF24_standbyI(void) {
