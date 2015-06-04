@@ -9,7 +9,6 @@
  */
 
 #include "nrf24l01_plus.h"
-#include <stdlib.h>
 
 static uint8_t payload_legth[6];
 
@@ -149,50 +148,34 @@ void NRF24_setAddressLength(uint8_t address_length) {
 
 void NRF24_setRxAddress(uint8_t* address, uint8_t address_length,
         uint8_t data_pipe) {
-    uint8_t i, *reverse_address;
-
-    reverse_address = (uint8_t*) malloc(address_length);
-    // reverse the array, NRF24L01+ expects LSB first
-    for (i = 0; i < address_length; i++) {
-        reverse_address[i] = address[address_length - 1 - i];
-    }
     switch (data_pipe) {
     case DATA_PIPE_0:
-        NRF24_writeRegister(RX_ADDR_P0, reverse_address, address_length);
+        NRF24_writeRegister(RX_ADDR_P0, address, address_length);
         break;
     case DATA_PIPE_1:
-        NRF24_writeRegister(RX_ADDR_P1, reverse_address, address_length);
+        NRF24_writeRegister(RX_ADDR_P1, address, address_length);
         break;
     case DATA_PIPE_2:
         // Only LSB. MSBytes are equal to RX_ADDR_P1[39:8]
-        NRF24_writeRegister(RX_ADDR_P2, reverse_address, 1);
+        NRF24_writeRegister(RX_ADDR_P2, address, 1);
         break;
     case DATA_PIPE_3:
         // Only LSB. MSBytes are equal to RX_ADDR_P1[39:8]
-        NRF24_writeRegister(RX_ADDR_P3, reverse_address, 1);
+        NRF24_writeRegister(RX_ADDR_P3, address, 1);
         break;
     case DATA_PIPE_4:
         // Only LSB. MSBytes are equal to RX_ADDR_P1[39:8]
-        NRF24_writeRegister(RX_ADDR_P4, reverse_address, 1);
+        NRF24_writeRegister(RX_ADDR_P4, address, 1);
         break;
     case DATA_PIPE_5:
         // Only LSB. MSBytes are equal to RX_ADDR_P1[39:8]
-        NRF24_writeRegister(RX_ADDR_P5, reverse_address, 1);
+        NRF24_writeRegister(RX_ADDR_P5, address, 1);
         break;
     }
-    free(reverse_address);
 }
 
 void NRF24_setTxAddress(uint8_t* address, uint8_t address_length) {
-    uint8_t i, *reverse_address;
-
-    reverse_address = (uint8_t*) malloc(address_length);
-    // reverse the array, NRF24L01+ expects LSB first
-    for (i = 0; i < address_length; i++) {
-        reverse_address[i] = address[address_length - 1 - i];
-    }
-    NRF24_writeRegister(TX_ADDR, reverse_address, address_length);
-    free(reverse_address);
+    NRF24_writeRegister(TX_ADDR, address, address_length);
 }
 
 void NRF24_enableDataPipe(uint8_t data_pipe) {
