@@ -33,8 +33,8 @@
 void uart_init(unsigned int _ubrr) {
     UBRRH = (_ubrr >> 8);
     UBRRL = _ubrr;                        // Set Baud rate
-    UCSRB |= (1 << RXEN) | (1 << TXEN);  // Enable The receiver and transmitter
-    UCSRC |= (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0); // Character Size: 8-bit
+    UCSRB |= (1 << RXEN) | (1 << TXEN);// Enable The receiver and transmitter
+    UCSRC |= (1 << URSEL) | (1 << UCSZ1) | (1 << UCSZ0);// Character Size: 8-bit
 }
 
 /*
@@ -43,9 +43,9 @@ void uart_init(unsigned int _ubrr) {
  */
 int uart_putchar(char _ch, FILE *_stream) {
     if (_ch == '\n')
-        uart_putchar('\r', _stream);
+    uart_putchar('\r', _stream);
     while (!(UCSRA & (1 << UDRE)))
-        ;
+    ;
     UDR = _ch;
     return 0;
 }
@@ -70,8 +70,9 @@ int main(void) {
 #endif
     debug_msg("\n\n***  NRF24l01+ TX test  ***\n\n");
 
-    uint8_t tx_address[5] = { 0xA1, 0xA1, 0xA1, 0xA1, 0xA1 };
-    uint8_t rx_address[5] = { 0xB2, 0xB2, 0xB2, 0xB2, 0xB2 };
+    uint8_t tx_address_m1[5] = { 0xA2, 0xA0, 0xA0, 0xA0, 0xA0 };
+    uint8_t tx_address_m2[5] = { 0xA1, 0xA0, 0xA0, 0xA0, 0xA0 };
+    uint8_t rx_address[5] = { 0xA0, 0xA0, 0xA0, 0xA0, 0xA0 };
 
     NRF24_init();
     // Confidure radio
@@ -81,9 +82,7 @@ int main(void) {
     NRF24_setCRCEncodingScheme(ENCODING_SCHEME_1BYTE);
     NRF24_enableCRC();
     NRF24_setAddressLength(ADDRESS_5_BYTES);
-    NRF24_setTxAddress(tx_address, 5);
     NRF24_setRxAddress(rx_address, 5, DATA_PIPE_1);
-    NRF24_setRxAddress(tx_address, 5, DATA_PIPE_0);
     NRF24_enableDataPipe(DATA_PIPE_0);
     NRF24_enableDataPipe(DATA_PIPE_1);
     NRF24_enableAutoACK(DATA_PIPE_0);
@@ -109,15 +108,19 @@ int main(void) {
         data[i] = 0x00;
 
     while (1) {
+        // send data to M1 address
+        NRF24_setTxAddress(tx_address_m1, 5);
+        NRF24_setRxAddress(tx_address_m1, 5, DATA_PIPE_0); // for auto ACK
         PORTA |= (1 << PA0) | (1 << PA1);
         // send data
+        data[0] = tx_address_m1[0];
         NRF24_sendData(data, PAYLOAD_LENGTH);
         // wait for status update
         while (!(NRF24_getStatus() & ((1 << MAX_RT_BIT) | (1 << TX_DS_BIT))))
             ;
         // check transmission status
         if (NRF24_getStatus() & (1 << TX_DS_BIT)) {
-            debug_msg("> Tranmission went OK\r\n");
+            debug_msg("> Transmission went OK\r\n");
             PORTA &= ~(1 << PA0);
         } else if (NRF24_getStatus() & (1 << MAX_RT_BIT)) {
             debug_msg("> Message is lost ...\r\n");
@@ -125,11 +128,31 @@ int main(void) {
         }
 
         NRF24_RxMode();
-
-        for (i = 0; i < PAYLOAD_LENGTH; i++)
-            data[i] += 0x01;
-
         _delay_ms(1000);
+
+        // send data to M2 address
+        NRF24_setTxAddress(tx_address_m2, 5);
+        NRF24_setRxAddress(tx_address_m2, 5, DATA_PIPE_0); // for auto ACK
+        PORTA |= (1 << PA0) | (1 << PA1);
+        // send data
+        data[0] = tx_address_m2[0];
+        NRF24_sendData(data, PAYLOAD_LENGTH);
+        // wait for status update
+        while (!(NRF24_getStatus() & ((1 << MAX_RT_BIT) | (1 << TX_DS_BIT))))
+            ;
+        // check transmission status
+        if (NRF24_getStatus() & (1 << TX_DS_BIT)) {
+            debug_msg("> Transmission went OK\r\n");
+            PORTA &= ~(1 << PA0);
+        } else if (NRF24_getStatus() & (1 << MAX_RT_BIT)) {
+            debug_msg("> Message is lost ...\r\n");
+            PORTA &= ~(1 << PA1);
+        }
+
+        NRF24_RxMode();
+        _delay_ms(1000);
+
+        data[PAYLOAD_LENGTH -1]++;
     }
     return 0;
 }

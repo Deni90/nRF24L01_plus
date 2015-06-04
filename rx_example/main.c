@@ -64,7 +64,11 @@ int debug_msg(const char * format, ...) {
 }
 
 
-
+/*
+ * The module will be configured to be able to receive data from two different
+ * addresses. Goal is to test the NRF24_setRxAddress and NRF24_getData
+ * functions.
+ */
 int main(void) {
 #if DEBUG == 1
     uart_init(MYUBRR);
@@ -72,11 +76,12 @@ int main(void) {
 #endif
     debug_msg("\n\n***  NRF24l01+ RX test  ***\n\n");
 
-    uint8_t tx_address[5] = { 0xB2, 0xB2, 0xB2, 0xB2, 0xB2 };
-    uint8_t rx_address[5] = { 0xA1, 0xA1, 0xA1, 0xA1, 0xA1 };
+    uint8_t tx_address[5] = { 0xA0, 0xA0, 0xA0, 0xA0, 0xA0 };
+    uint8_t rx_address_p1[5] = { 0xA1, 0xA0, 0xA0, 0xA0, 0xA0 };
+    uint8_t rx_address_p2[5] = { 0xA2, 0xA0, 0xA0, 0xA0, 0xA0 };
 
     NRF24_init();
-    // Confidure radio
+    // Configure radio
     NRF24_setDataRate(DATA_RATE_1MBPS);
     NRF24_setRFChannel(13);
     NRF24_setPowerAmplifier(RF_PWR_0DBM);
@@ -84,13 +89,17 @@ int main(void) {
     NRF24_enableCRC();
     NRF24_setAddressLength(ADDRESS_5_BYTES);
     NRF24_setTxAddress(tx_address, 5);
-    NRF24_setRxAddress(rx_address, 5, DATA_PIPE_1);
     NRF24_setRxAddress(tx_address, 5, DATA_PIPE_0);
+    NRF24_setRxAddress(rx_address_p1, 5, DATA_PIPE_1);
+    NRF24_setRxAddress(rx_address_p2, 5, DATA_PIPE_2);
     NRF24_enableDataPipe(DATA_PIPE_0);
     NRF24_enableDataPipe(DATA_PIPE_1);
+    NRF24_enableDataPipe(DATA_PIPE_2);
     NRF24_enableAutoACK(DATA_PIPE_0);
     NRF24_enableAutoACK(DATA_PIPE_1);
+    NRF24_enableAutoACK(DATA_PIPE_2);
     NRF24_setPayloadLength(DATA_PIPE_1, PAYLOAD_LENGTH);
+    NRF24_setPayloadLength(DATA_PIPE_2, PAYLOAD_LENGTH);
     NRF24_setAutoRetransmissionTrials(15);
     NRF24_setAutoRetransmissionDelay(4);
     NRF24_RxMode();
